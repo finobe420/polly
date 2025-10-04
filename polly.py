@@ -27,7 +27,7 @@ async def ex(*exc):
     else: return stdout
 
 # execute custom POLscript
-async def excscript(script, client):
+async def excscript(script, client, selector):
     loop = asyncio.get_event_loop()
     if type(script) == bytes: script = script.decode('latin1')
     s = script.splitlines()
@@ -42,6 +42,7 @@ async def excscript(script, client):
         else:
             b += i + '\r\n'
     await loop.sock_sendall(client, b.encode('latin1'))
+    do_log(selector, len(b))
     client.close()
 
 # selector processing
@@ -54,21 +55,27 @@ async def process(client, selector):
     elif os.path.isdir(f):
         fl = [fi for fi in os.listdir(f) if os.path.isfile(f + '/' +fi)]
         dr = [fi for fi in os.listdir(f) if os.path.isdir(f + '/' + fi)]
-        await loop.sock_sendall(client, b'i dir listing for %s\t\t\t\r\n\r\n' % (s.encode('latin1') if s else b'/'))
+        snd = b'i dir listing for %s\t\t\t\r\n\r\n' % (s.encode('latin1') if s else b'/')
+        #await loop.sock_sendall(client, b'i dir listing for %s\t\t\t\r\n\r\n' % (s.encode('latin1') if s else b'/'))
         for l in dr:
             t = '1'
             r = (t, l, s, l, hostname, str(port))
-            await loop.sock_sendall(client, ('%s%s\t%s/%s\t%s\t%s\r\n' % r).encode('latin1'))
+            snd += ('%s%s\t%s/%s\t%s\t%s\r\n' % r).encode('latin1')
         for l in fl:
             t = find_type(pathlib.Path(l).suffix)
             r = (t, l, s, l, hostname, str(port))
-            await loop.sock_sendall(client, ('%s%s\t%s/%s\t%s\t%s\r\n' % r).encode('latin1'))
+            snd += ('%s%s\t%s/%s\t%s\t%s\r\n' % r).encode('latin1')
+        do_log(s, len(snd))
+        await loop.sock_sendall(client, snd)
         client.close()
     elif os.path.isfile(f):
-        if f.endswith('.pol'): await excscript(f.read(), client)
+        if f.endswith('.pol'):
+            await excscript(f.read(), client, s)
         else:
             with open(f, 'rb') as f:
-                await loop.sock_sendall(client, f.read())
+                snd = f.read()
+                await loop.sock_sendall(client, snd)
+                do_log(s, len(snd))
                 client.close()
     pass
 
