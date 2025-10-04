@@ -26,6 +26,16 @@ async def ex(*exc):
     if stderr: return stderr
     else: return stdout
 
+async def expy(script, query, host):
+    proc = await asyncio.create_subprocess_shell(
+        script,
+        stdout = asyncio.subprocess.PIPE,
+        stderr = asyncio.subprocess.PIPE
+        )
+    stdout, stderr = await proc.communicate()
+    if stderr: return stderr
+    else: return stdout
+
 # execute custom POLscript
 async def excscript(script, client, selector):
     loop = asyncio.get_event_loop()
@@ -49,6 +59,9 @@ async def excscript(script, client, selector):
 async def process(client, selector):
     loop = asyncio.get_event_loop()
     s = selector[:-2].decode('latin1').rstrip('/')
+    if '\t' in s:
+        query = s.split('\t',1)[1]
+        s = s.split('\t',1)[0]
     f = gophsrc + s
     if os.path.isfile(f+'/menu.pol'):
         with open(f+'/menu.pol', 'rb') as f: await excscript(f.read(), client, s)
