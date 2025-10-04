@@ -26,19 +26,20 @@ async def ex(*exc):
     if stderr: return stderr
     else: return stdout
 
-async def expy(script, query, host):
+async def expy(script, query, host, cwd):
     proc = await asyncio.create_subprocess_shell(
-        script,
+        'python3', script,
         stdout = asyncio.subprocess.PIPE,
         stderr = asyncio.subprocess.PIPE,
-        env = {'GOPHER_QUERY': query, 'GOPHER_REQUEST_HOST': host}
+        env = {'GOPHER_QUERY': query, 'GOPHER_REQUEST_HOST': host},
+        cwd = cwd
         )
     stdout, stderr = await proc.communicate()
     if stderr: return stderr
     else: return stdout
 
 # execute custom POLscript
-async def excscript(script, client, selector):
+async def excscript(script, client, selector, reqer):
     loop = asyncio.get_event_loop()
     if type(script) == bytes: script = script.decode('latin1')
     s = script.splitlines()
@@ -53,11 +54,12 @@ async def excscript(script, client, selector):
         else:
             b += i + '\r\n'
     await loop.sock_sendall(client, b.encode('latin1'))
-    do_log(selector, len(b))
+    do_log(selector, len(b), reqer)
     client.close()
 
 # selector processing
 async def process(client, selector):
+    reqer = client.getpeername()
     loop = asyncio.get_event_loop()
     s = selector[:-2].decode('latin1').rstrip('/')
     if '\t' in s:
@@ -65,8 +67,9 @@ async def process(client, selector):
         s = s.split('\t',1)[0]
         print(query, s)
     f = gophsrc + s
+    print(f)
     if os.path.isfile(f+'/menu.pol'):
-        with open(f+'/menu.pol', 'rb') as f: await excscript(f.read(), client, s)
+        with open(f+'/menu.pol', 'rb') as f: await excscript(f.read(), client, s, reqer)
     elif os.path.isdir(f):
         fl = [fi for fi in os.listdir(f) if os.path.isfile(f + '/' +fi)]
         dr = [fi for fi in os.listdir(f) if os.path.isdir(f + '/' + fi)]
@@ -85,21 +88,23 @@ async def process(client, selector):
         client.close()
     elif os.path.isfile(f):
         if f.endswith('.pol'):
-            await excscript(f.read(), client, s)
+            await excscript(f.read(), client, s, reqer)
+        elif f.endswith('.py'):
+            await expy(f.read(), query, reqer)
         else:
             with open(f, 'rb') as f:
                 snd = f.read()
                 await loop.sock_sendall(client, snd)
-                do_log(s, len(snd))
+                do_log(s, len(snd), reqer)
                 client.close()
     else:
         client.close()
     pass
 
-def do_log(request, length):
+def do_log(request, length, req):
     current_time = datetime.datetime.now()
     lg = (
-        host, strftime('%d/%b/%Y:%H:%M:%S %z'), request if request else '/', length
+        req, strftime('%d/%b/%Y:%H:%M:%S %z'), request if request else '/', length
         )
     logger.info('%s - - [%s] "%s" %s' % lg)
 
