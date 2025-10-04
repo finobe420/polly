@@ -51,7 +51,7 @@ async def process(client, selector):
     s = selector[:-2].decode('latin1').rstrip('/')
     f = gophsrc + s
     if os.path.isfile(f+'/menu.pol'):
-        with open(f+'/menu.pol', 'rb') as f: await excscript(f.read(), client)
+        with open(f+'/menu.pol', 'rb') as f: await excscript(f.read(), client, s)
     elif os.path.isdir(f):
         fl = [fi for fi in os.listdir(f) if os.path.isfile(f + '/' +fi)]
         dr = [fi for fi in os.listdir(f) if os.path.isdir(f + '/' + fi)]
@@ -77,6 +77,8 @@ async def process(client, selector):
                 await loop.sock_sendall(client, snd)
                 do_log(s, len(snd))
                 client.close()
+    else:
+        client.close()
     pass
 
 def do_log(request, length):
