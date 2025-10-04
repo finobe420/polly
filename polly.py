@@ -10,8 +10,8 @@ logger.setLevel(logging.INFO)
 # I SWEAR TO FUCKING GOD IF YOU DON'T, I'M GOING TO KILL YOU IN YOUR FUCKING SLEEP
 gophsrc = 'C:/gopher'
 hostname = 'aim.gaysexonline.net'
-host = '127.0.0.1'
-port = 7000
+host = '0.0.0.0'
+port = 70
 
 import asyncio, socket, pathlib
 from gtype import find_type
@@ -72,44 +72,45 @@ async def process(client, selector):
     if '\t' in s:
         query = s.split('\t',1)[1]
         s = s.split('\t',1)[0]
-    f = gophsrc + s
-    if os.path.isfile(f+'/menu.pol'):
-        with open(f+'/menu.pol', 'rb') as f: await excscript(f.read(), client, s, reqer)
-    elif os.path.isdir(f):
-        fl = [fi for fi in os.listdir(f) if os.path.isfile(f + '/' +fi)]
-        dr = [fi for fi in os.listdir(f) if os.path.isdir(f + '/' + fi)]
-        snd = b'idirectory listing for %s\t\t\t\r\ni----------------------\t\t\t\r\n' % (s.encode('latin1') if s else b'/')
-        #await loop.sock_sendall(client, b'i dir listing for %s\t\t\t\r\n\r\n' % (s.encode('latin1') if s else b'/'))
-        for l in dr:
-            t = '1'
-            probe = os.stat(f + '/' + l)
-            form = l[:16].ljust(16, ' ') + ' ' + '-'[:8].ljust(8, ' ') + strftime('%d-%b-%Y %I:%M', localtime(probe.st_mtime))
-            r = (t, form, s, l, hostname, str(port))
-            snd += ('%s%s\t%s/%s\t%s\t%s\r\n' % r).encode('latin1')
-        for l in fl:
-            t = find_type(pathlib.Path(l).suffix)
-            probe = os.stat(f + '/' + l)
-            # TODO: oh no
-            form = l[:16].ljust(16, ' ') + ' ' + format_size(probe.st_size)[:8].ljust(8, ' ') + strftime('%d-%b-%Y %I:%M', localtime(probe.st_mtime))
-            r = (t, form, s, l, hostname, str(port))
-            snd += ('%s%s\t%s/%s\t%s\t%s\r\n' % r).encode('latin1')
-        do_log(s, len(snd), reqer, query)
-        await loop.sock_sendall(client, snd)
-        client.close()
-    elif os.path.isfile(f):
-        if f.endswith('.pol'):
-            await excscript(f.read(), client, s, reqer)
-        elif f.endswith('.py'):
-            await expy(f, query, reqer, f.rpartition('/')[0], client, s)
-        else:
-            with open(f, 'rb') as f:
-                snd = f.read()
-                await loop.sock_sendall(client, snd)
-                do_log(s, len(snd), reqer, query)
-                client.close()
+    if '..' in s: client.close()
     else:
-        client.close()
-    pass
+        f = gophsrc + s
+        if os.path.isfile(f+'/menu.pol'):
+            with open(f+'/menu.pol', 'rb') as f: await excscript(f.read(), client, s, reqer)
+        elif os.path.isdir(f):
+            fl = [fi for fi in os.listdir(f) if os.path.isfile(f + '/' +fi)]
+            dr = [fi for fi in os.listdir(f) if os.path.isdir(f + '/' + fi)]
+            snd = b'idirectory listing for %s\t\t\t\r\ni----------------------\t\t\t\r\n' % (s.encode('latin1') if s else b'/')
+            #await loop.sock_sendall(client, b'i dir listing for %s\t\t\t\r\n\r\n' % (s.encode('latin1') if s else b'/'))
+            for l in dr:
+                t = '1'
+                probe = os.stat(f + '/' + l)
+                form = l[:16].ljust(16, ' ') + ' ' + '-'[:8].ljust(8, ' ') + strftime('%d-%b-%Y %I:%M', localtime(probe.st_mtime))
+                r = (t, form, s, l, hostname, str(port))
+                snd += ('%s%s\t%s/%s\t%s\t%s\r\n' % r).encode('latin1')
+            for l in fl:
+                t = find_type(pathlib.Path(l).suffix)
+                probe = os.stat(f + '/' + l)
+                # TODO: oh no
+                form = l[:32].ljust(32, ' ') + ' ' + format_size(probe.st_size)[:8].ljust(8, ' ') + strftime('%d-%b-%Y %I:%M', localtime(probe.st_mtime))
+                r = (t, form, s, l, hostname, str(port))
+                snd += ('%s%s\t%s/%s\t%s\t%s\r\n' % r).encode('latin1')
+            do_log(s, len(snd), reqer, query)
+            await loop.sock_sendall(client, snd)
+            client.close()
+        elif os.path.isfile(f):
+            if f.endswith('.pol'):
+                await excscript(f.read(), client, s, reqer)
+            elif f.endswith('.py'):
+                await expy(f, query, reqer, f.rpartition('/')[0], client, s)
+            else:
+                with open(f, 'rb') as f:
+                    snd = f.read()
+                    await loop.sock_sendall(client, snd)
+                    do_log(s, len(snd), reqer, query)
+                    client.close()
+        else:
+            client.close()
 
 def do_log(request, length, req, query):
     current_time = datetime.datetime.now()
