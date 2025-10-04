@@ -1,4 +1,4 @@
-import asyncio, socket, logging, os, datetime
+import asyncio, socket, logging, os, datetime, shlex
 from time import strftime, localtime
 
 logging.basicConfig(format='%(message)s',filemode='w')
@@ -27,7 +27,8 @@ async def ex(*exc):
     else: return stdout
 
 async def expy(script, query, host, cwd):
-    proc = await asyncio.create_subprocess_shell(
+    print('executing script: %s, host: %s, query: %s, cwd: %s' % (script, host, query, cwd))
+    proc = await asyncio.create_subprocess_exec(
         'python3', script,
         stdout = asyncio.subprocess.PIPE,
         stderr = asyncio.subprocess.PIPE,
@@ -35,6 +36,7 @@ async def expy(script, query, host, cwd):
         cwd = cwd
         )
     stdout, stderr = await proc.communicate()
+    print(stdout, stderr)
     if stderr: return stderr
     else: return stdout
 
@@ -59,7 +61,7 @@ async def excscript(script, client, selector, reqer):
 
 # selector processing
 async def process(client, selector):
-    reqer = client.getpeername()
+    reqer = client.getpeername()[0]
     loop = asyncio.get_event_loop()
     s = selector[:-2].decode('latin1').rstrip('/')
     query = ''
