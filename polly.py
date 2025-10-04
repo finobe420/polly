@@ -1,5 +1,9 @@
-import asyncio, socket
-import os
+import asyncio, socket, logging, os, datetime
+from time import strftime, localtime
+
+logging.basicConfig(format='%(message)s',filemode='w')
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
 
 # IMPORTANT: CHANGE THESE BEFORE RUNNING!!!!!!!!!!!!!
 # I SWEAR TO FUCKING GOD IF YOU DON'T, I'M GOING TO KILL YOU IN YOUR FUCKING SLEEP
@@ -68,6 +72,13 @@ async def process(client, selector):
                 client.close()
     pass
 
+async def do_log(request, length):
+    current_time = datetime.datetime.now()
+    lg = (
+        host, strftime('%d/%b/%Y:%H:%M:%S %z'), request if request else '/', length
+        )
+    logger.info('%s - - [%s] "%s" %s' % lg)
+
 # client bootstrap
 async def handle_client(client):
     loop = asyncio.get_event_loop()
@@ -75,6 +86,7 @@ async def handle_client(client):
     while not request.endswith(b'\r\n'):
         request += await loop.sock_recv(client, 1)
     await asyncio.gather(process(client, request))
+
 
 # init server
 async def run_server():
