@@ -62,6 +62,7 @@ async def process(client, selector):
     reqer = client.getpeername()
     loop = asyncio.get_event_loop()
     s = selector[:-2].decode('latin1').rstrip('/')
+    query = ''
     if '\t' in s:
         query = s.split('\t',1)[1]
         s = s.split('\t',1)[0]
@@ -90,7 +91,7 @@ async def process(client, selector):
         if f.endswith('.pol'):
             await excscript(f.read(), client, s, reqer)
         elif f.endswith('.py'):
-            await expy(f.read(), query, reqer)
+            await expy(f, query, reqer, f.rpartition('/')[0])
         else:
             with open(f, 'rb') as f:
                 snd = f.read()
