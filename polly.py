@@ -3,7 +3,7 @@ from time import strftime, localtime
 
 logging.basicConfig(format='%(message)s',filemode='w')
 logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 # IMPORTANT: CHANGE THESE BEFORE RUNNING!!!!!!!!!!!!!
 # I SWEAR TO FUCKING GOD IF YOU DON'T, I'M GOING TO KILL YOU IN YOUR FUCKING SLEEP
@@ -101,6 +101,7 @@ async def handle_client(client):
 async def run_server():
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.bind((host, port))
+    logger.info('Polly server listening on %s:%s' % (host, str(port)))
     server.listen(0)
     server.setblocking(False)
 
