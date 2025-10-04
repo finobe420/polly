@@ -28,7 +28,7 @@ async def ex(*exc):
 
 async def expy(script, query, host, cwd, client, selector):
     loop = asyncio.get_event_loop()
-    print('executing script: %s, host: %s, query: %s, cwd: %s' % (script, host, query, cwd))
+    #print('executing script: %s, host: %s, query: %s, cwd: %s' % (script, host, query, cwd))
     proc = await asyncio.create_subprocess_exec(
         'python3', script,
         stdout = asyncio.subprocess.PIPE,
@@ -37,11 +37,10 @@ async def expy(script, query, host, cwd, client, selector):
         cwd = cwd
         )
     stdout, stderr = await proc.communicate()
-    print(stdout, stderr)
-    if stderr: b = stderr
+    if stderr: b = stdout + b'3 -- execution was halted due to an exception being raised --\r\ni' + b'\r\ni'.join(stderr.splitlines())
     else: b = stdout
     await loop.sock_sendall(client, b)
-    do_log(selector, len(b), host)
+    do_log(selector, len(b), host, query)
     client.close()
 
 # execute custom POLscript
@@ -60,7 +59,7 @@ async def excscript(script, client, selector, reqer):
         else:
             b += i + '\r\n'
     await loop.sock_sendall(client, b.encode('latin1'))
-    do_log(selector, len(b), reqer)
+    do_log(selector, len(b), reqer, '')
     client.close()
 
 # selector processing
@@ -72,9 +71,7 @@ async def process(client, selector):
     if '\t' in s:
         query = s.split('\t',1)[1]
         s = s.split('\t',1)[0]
-        print(query, s)
     f = gophsrc + s
-    print(f)
     if os.path.isfile(f+'/menu.pol'):
         with open(f+'/menu.pol', 'rb') as f: await excscript(f.read(), client, s, reqer)
     elif os.path.isdir(f):
@@ -90,7 +87,7 @@ async def process(client, selector):
             t = find_type(pathlib.Path(l).suffix)
             r = (t, l, s, l, hostname, str(port))
             snd += ('%s%s\t%s/%s\t%s\t%s\r\n' % r).encode('latin1')
-        do_log(s, len(snd), reqer)
+        do_log(s, len(snd), reqer, query)
         await loop.sock_sendall(client, snd)
         client.close()
     elif os.path.isfile(f):
@@ -102,18 +99,18 @@ async def process(client, selector):
             with open(f, 'rb') as f:
                 snd = f.read()
                 await loop.sock_sendall(client, snd)
-                do_log(s, len(snd), reqer)
+                do_log(s, len(snd), reqer, query)
                 client.close()
     else:
         client.close()
     pass
 
-def do_log(request, length, req):
+def do_log(request, length, req, query):
     current_time = datetime.datetime.now()
     lg = (
-        req, strftime('%d/%b/%Y:%H:%M:%S %z'), request if request else '/', length
+        req, strftime('%d/%b/%Y:%H:%M:%S %z'), request if request else '/', length, query
         )
-    logger.info('%s - - [%s] "%s" %s' % lg)
+    logger.info('%s - - [%s] "%s" %s "%s"' % lg)
 
 # client bootstrap
 async def handle_client(client):
