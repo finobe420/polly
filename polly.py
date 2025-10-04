@@ -30,7 +30,8 @@ async def expy(script, query, host):
     proc = await asyncio.create_subprocess_shell(
         script,
         stdout = asyncio.subprocess.PIPE,
-        stderr = asyncio.subprocess.PIPE
+        stderr = asyncio.subprocess.PIPE,
+        env = {'GOPHER_QUERY': query, 'GOPHER_REQUEST_HOST': host}
         )
     stdout, stderr = await proc.communicate()
     if stderr: return stderr
@@ -62,6 +63,7 @@ async def process(client, selector):
     if '\t' in s:
         query = s.split('\t',1)[1]
         s = s.split('\t',1)[0]
+        print(query, s)
     f = gophsrc + s
     if os.path.isfile(f+'/menu.pol'):
         with open(f+'/menu.pol', 'rb') as f: await excscript(f.read(), client, s)
