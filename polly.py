@@ -72,7 +72,7 @@ async def process(client, selector):
                 client.close()
     pass
 
-async def do_log(request, length):
+def do_log(request, length):
     current_time = datetime.datetime.now()
     lg = (
         host, strftime('%d/%b/%Y:%H:%M:%S %z'), request if request else '/', length
