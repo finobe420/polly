@@ -1,5 +1,6 @@
 import asyncio, socket, logging, os, datetime, shlex
 from time import strftime, localtime
+from gbytes import format_size
 
 logging.basicConfig(format='%(message)s',filemode='w')
 logger = logging.getLogger()
@@ -8,7 +9,7 @@ logger.setLevel(logging.INFO)
 # IMPORTANT: CHANGE THESE BEFORE RUNNING!!!!!!!!!!!!!
 # I SWEAR TO FUCKING GOD IF YOU DON'T, I'M GOING TO KILL YOU IN YOUR FUCKING SLEEP
 gophsrc = 'C:/gopher'
-hostname = 'example.com'
+hostname = 'aim.gaysexonline.net'
 host = '127.0.0.1'
 port = 7000
 
@@ -77,15 +78,20 @@ async def process(client, selector):
     elif os.path.isdir(f):
         fl = [fi for fi in os.listdir(f) if os.path.isfile(f + '/' +fi)]
         dr = [fi for fi in os.listdir(f) if os.path.isdir(f + '/' + fi)]
-        snd = b'i dir listing for %s\t\t\t\r\n\r\n' % (s.encode('latin1') if s else b'/')
+        snd = b'idirectory listing for %s\t\t\t\r\ni----------------------\t\t\t\r\n' % (s.encode('latin1') if s else b'/')
         #await loop.sock_sendall(client, b'i dir listing for %s\t\t\t\r\n\r\n' % (s.encode('latin1') if s else b'/'))
         for l in dr:
             t = '1'
-            r = (t, l, s, l, hostname, str(port))
+            probe = os.stat(f + '/' + l)
+            form = l[:16].ljust(16, ' ') + ' ' + '-'[:8].ljust(8, ' ') + strftime('%d-%b-%Y %I:%M', localtime(probe.st_mtime))
+            r = (t, form, s, l, hostname, str(port))
             snd += ('%s%s\t%s/%s\t%s\t%s\r\n' % r).encode('latin1')
         for l in fl:
             t = find_type(pathlib.Path(l).suffix)
-            r = (t, l, s, l, hostname, str(port))
+            probe = os.stat(f + '/' + l)
+            # TODO: oh no
+            form = l[:16].ljust(16, ' ') + ' ' + format_size(probe.st_size)[:8].ljust(8, ' ') + strftime('%d-%b-%Y %I:%M', localtime(probe.st_mtime))
+            r = (t, form, s, l, hostname, str(port))
             snd += ('%s%s\t%s/%s\t%s\t%s\r\n' % r).encode('latin1')
         do_log(s, len(snd), reqer, query)
         await loop.sock_sendall(client, snd)
