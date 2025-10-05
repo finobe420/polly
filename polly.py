@@ -47,7 +47,7 @@ async def expy(script, query, reqhost, cwd, client, selector):
     client.close()
 
 # execute custom POLscript
-async def excscript(script, client, selector, reqer):
+async def excscript(script, client, selector, reqer, query):
     loop = asyncio.get_event_loop()
     if type(script) == bytes: script = script.decode('latin1')
     s = script.splitlines()
@@ -62,7 +62,7 @@ async def excscript(script, client, selector, reqer):
         else:
             b += i + '\r\n'
     await loop.sock_sendall(client, b.encode('latin1'))
-    do_log(selector, len(b), reqer, '')
+    do_log(selector, len(b), reqer, query)
     client.close()
 
 # selector processing
@@ -71,17 +71,17 @@ async def process(client, selector):
     loop = asyncio.get_event_loop()
     s = selector[:-2].decode('latin1').rstrip('/')
     query = ''
-    if '\t' in s:
-        query = s.split('\t',1)[1]
-        s = s.split('\t',1)[0]
-    elif '?' in s:
+    if '?' in s:
         query = s.split('?',1)[1]
         s = s.split('?',1)[0]
+    elif '\t' in s:
+        query = s.split('\t',1)[1]
+        s = s.split('\t',1)[0]
     if '..' in s: client.close()
     else:
         f = gophsrc + s
         if os.path.isfile(f+'/menu.pol'):
-            with open(f+'/menu.pol', 'rb') as f: await excscript(f.read(), client, s, reqer)
+            with open(f+'/menu.pol', 'rb') as f: await excscript(f.read(), client, s, reqer, query)
         elif os.path.isdir(f):
             fl = [fi for fi in os.listdir(f) if os.path.isfile(f + '/' +fi)]
             dr = [fi for fi in os.listdir(f) if os.path.isdir(f + '/' + fi)]
@@ -105,7 +105,7 @@ async def process(client, selector):
             client.close()
         elif os.path.isfile(f):
             if f.endswith('.pol'):
-                with open(f, 'r') as f: await excscript(f.read(), client, s, reqer)
+                with open(f, 'r') as f: await excscript(f.read(), client, s, reqer, query)
             elif f.endswith('.py'):
                 await expy(f, query, reqer, f.rpartition('/')[0], client, s)
             else:
