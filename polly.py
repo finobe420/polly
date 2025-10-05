@@ -74,6 +74,9 @@ async def process(client, selector):
     if '\t' in s:
         query = s.split('\t',1)[1]
         s = s.split('\t',1)[0]
+    elif '?' in s:
+        query = s.split('?',1)[1]
+        s = s.split('?',1)[0]
     if '..' in s: client.close()
     else:
         f = gophsrc + s
