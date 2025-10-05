@@ -34,7 +34,7 @@ async def expy(script, query, reqhost, cwd, client, selector):
         'python3', script,
         stdout = asyncio.subprocess.PIPE,
         stderr = asyncio.subprocess.PIPE,
-        env = {'GOPHER_QUERY': query, 'GOPHER_REQUEST_HOST': reqhost},
+        env = os.environ.copy() | {'GOPHER_QUERY': query, 'GOPHER_REQUEST_HOST': reqhost},
         cwd = cwd
         )
     stdout, stderr = await proc.communicate()
