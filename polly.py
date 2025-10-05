@@ -27,21 +27,23 @@ async def ex(*exc):
     if stderr: return stderr
     else: return stdout
 
-async def expy(script, query, host, cwd, client, selector):
+async def expy(script, query, reqhost, cwd, client, selector):
     loop = asyncio.get_event_loop()
     #print('executing script: %s, host: %s, query: %s, cwd: %s' % (script, host, query, cwd))
     proc = await asyncio.create_subprocess_exec(
         'python3', script,
         stdout = asyncio.subprocess.PIPE,
         stderr = asyncio.subprocess.PIPE,
-        env = {'GOPHER_QUERY': query, 'GOPHER_REQUEST_HOST': host},
+        env = {'GOPHER_QUERY': query, 'GOPHER_REQUEST_HOST': reqhost},
         cwd = cwd
         )
     stdout, stderr = await proc.communicate()
-    if stderr: b = stdout + b'3 -- execution was halted due to an exception being raised --\r\ni' + b'\r\ni'.join(stderr.splitlines())
+    if stderr:
+        print(stderr.decode())
+        b = stdout + b'3 -- execution was halted due to an exception being raised --\r\ni' + b'\r\ni'.join(stderr.splitlines())
     else: b = stdout
     await loop.sock_sendall(client, b)
-    do_log(selector, len(b), host, query)
+    do_log(selector, len(b), reqhost, query)
     client.close()
 
 # execute custom POLscript
