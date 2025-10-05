@@ -87,7 +87,7 @@ async def process(client, selector):
             for l in dr:
                 t = '1'
                 probe = os.stat(f + '/' + l)
-                form = l[:16].ljust(16, ' ') + ' ' + '-'[:8].ljust(8, ' ') + strftime('%d-%b-%Y %I:%M', localtime(probe.st_mtime))
+                form = l[:32].ljust(32, ' ') + ' ' + '-'[:8].ljust(8, ' ') + strftime('%d-%b-%Y %I:%M', localtime(probe.st_mtime))
                 r = (t, form, s, l, hostname, str(port))
                 snd += ('%s%s\t%s/%s\t%s\t%s\r\n' % r).encode('latin1')
             for l in fl:
@@ -102,7 +102,7 @@ async def process(client, selector):
             client.close()
         elif os.path.isfile(f):
             if f.endswith('.pol'):
-                await excscript(f.read(), client, s, reqer)
+                with open(f, 'r') as f: await excscript(f.read(), client, s, reqer)
             elif f.endswith('.py'):
                 await expy(f, query, reqer, f.rpartition('/')[0], client, s)
             else:
